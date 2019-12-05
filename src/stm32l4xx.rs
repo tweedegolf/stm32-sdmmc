@@ -1,5 +1,10 @@
 use stm32l4xx_hal::stm32;
 
+#[cfg(feature = "stm32l4x1")]
+type SDMMC = stm32::SDMMC;
+#[cfg(feature = "stm32l4x6")]
+type SDMMC = stm32::SDMMC1;
+
 use crate::Error::*;
 use crate::{
     AppCommand, Block, BlockCount, BlockIndex, BusWidth, CardHost, CardVersion, Command, Error,
@@ -33,7 +38,7 @@ enum State {
 }
 
 pub struct Device {
-    sdmmc: stm32::SDMMC1,
+    sdmmc: SDMMC,
     dma: stm32::DMA2,
     pins: Pins,
     config: Config,
@@ -64,7 +69,7 @@ impl Default for Config {
 }
 
 impl Device {
-    pub fn new(sdmmc: stm32::SDMMC1, dma: stm32::DMA2, pins: Pins, config: Config) -> Device {
+    pub fn new(sdmmc: SDMMC, dma: stm32::DMA2, pins: Pins, config: Config) -> Device {
         Device {
             sdmmc,
             dma,
@@ -79,7 +84,7 @@ impl Device {
 
     /// Recycle the object to get back the SDMMC and DMA peripherals. Panics if an operation is
     /// still ongoing.
-    pub fn free(self) -> (stm32::SDMMC1, stm32::DMA2, Pins) {
+    pub fn free(self) -> (SDMMC, stm32::DMA2, Pins) {
         use State::*;
         match self.state {
             Uninitialized | Init1(_) | Ready => (self.sdmmc, self.dma, self.pins),
